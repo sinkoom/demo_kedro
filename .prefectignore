@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+# Exclude only .py files in the parent directory
+!*.py
+!*.json
+
+# Ignore .py files in subdirectories
+*/

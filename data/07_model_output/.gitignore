@@ -1,0 +1,41 @@
+# Output files
+data/0[0-9]_*/*
+
+# Keep empty folders
+!data/0[0-9]_*/.gitignore
+
+# Local Settings
+conf/local
+
+# Temporary files
+*.*~
+
+# Project file
+.Rproj
+
+# History files
+.Rhistory
+
+# Session Data files
+.RData
+
+# Output files
+data/0[0-9]_*/*
+
+# Keep empty folders
+!data/0[0-9]_*/.gitignore
+
+# Local Settings
+conf/local
+
+# Temporary files
+*.*~
+
+# Project file
+.Rproj
+
+# History files
+.Rhistory
+
+# Session Data files
+.RData

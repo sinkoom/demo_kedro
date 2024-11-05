@@ -1,0 +1,395 @@
+
+##STAGE_1_R_BASE_IMAGE
+FROM --platform=${PLATFORM}  ${R_BASE_IMAGE} as r_py_stage
+##STAGE_1_BASE_IMAGE_ENDS_HERE
+
+##STAGE_1_DEPENDENCIES
+WORKDIR /
+RUN apt-get update -y
+RUN apt-get upgrade -y
+RUN apt-get install -y apt-utils ca-certificates --no-install-recommends
+RUN apt-get install --reinstall openssl
+RUN update-ca-certificates
+
+
+# Install curl and tools for setting up ssh tunnel and debugging docker networks
+RUN apt-get update && \
+    apt-get install curl -y && \
+    apt-get install openssh-client -y && \
+    apt-get install iproute2 -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        postgresql \
+        postgresql-contrib \
+        software-properties-common \
+        pkg-config \
+        build-essential \
+        gfortran \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        liblapack-dev \
+        libopenblas-dev \
+        libsm6 \
+        libxext6 \
+        libxrender-dev \
+        tzdata \
+        zlib1g-dev
+
+######## Python installation ##########
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    build-essential \
+    zlib1g-dev \
+    libssl-dev \
+    libncurses5-dev \
+    libsqlite3-dev \
+    libreadline-dev \
+    libffi-dev \
+    libbz2-dev \
+    liblzma-dev \
+    uuid-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Python version as mentioned from ARG
+RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}/Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz \
+    && tar xzf Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz \
+    && cd Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} \
+    && ./configure --enable-optimizations \
+    && make -j$(nproc) \
+    && make altinstall \
+    && cd .. \
+    && rm -rf Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz
+
+# Set Python3.11 as the default python command
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1
+
+## Set Environment Variables for Poetry, installing for Prefect usage.
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+#Copy the TOML
+COPY pyproject.toml /
+
+#Install poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+#Set poetry to install without a virtual environment
+RUN poetry config virtualenvs.create false
+
+#Install poetry without prompting the user for any input
+RUN poetry install --no-interaction
+
+RUN apt-get update && apt-get install unzip -y
+
+# Install AWC CLI and its dependencies
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
+
+RUN timeout 300 R -e "install.packages(c('mailR', 'rJava'), repos='https://cloud.r-project.org')"
+
+COPY . .
+
+ENTRYPOINT ["/bin/bash"]
+##STAGE_1_ENDS_HERE
+
+
+
+##STAGE_2_PYTHON_WITH_GPU_BASE_IMAGE
+FROM ${GPU_BASE_IMAGE} as py_gpu_stage
+##STAGE_2_BASE_IMAGE_ENDS_HERE
+
+##STAGE_2_DEPENDENCIES
+USER root
+WORKDIR /
+
+
+RUN apt-get update -y
+RUN apt-get upgrade -y
+RUN apt-get install -y apt-utils ca-certificates --no-install-recommends
+RUN apt-get install --reinstall openssl
+RUN update-ca-certificates
+
+
+# Install curl and tools for setting up ssh tunnel and debugging docker networks
+RUN apt-get update && \
+    apt-get install curl -y && \
+    apt-get install openssh-client -y && \
+    apt-get install iproute2 -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        postgresql \
+        postgresql-contrib \
+        software-properties-common \
+        pkg-config \
+        build-essential \
+        gfortran \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        liblapack-dev \
+        libopenblas-dev \
+        libsm6 \
+        libxext6 \
+        libxrender-dev \
+        tzdata \
+        zlib1g-dev
+
+######## Python installation ##########
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    build-essential \
+    zlib1g-dev \
+    libssl-dev \
+    libncurses5-dev \
+    libsqlite3-dev \
+    libreadline-dev \
+    libffi-dev \
+    libbz2-dev \
+    liblzma-dev \
+    uuid-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Python version as mentioned from ARG
+RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}/Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz \
+    && tar xzf Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz \
+    && cd Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} \
+    && ./configure --enable-optimizations \
+    && make -j$(nproc) \
+    && make altinstall \
+    && cd .. \
+    && rm -rf Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz
+
+# Set Python3.11 as the default python command
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1
+
+
+## Set Environment Variables for Poetry, installing for Prefect usage.
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+#Copy the TOML
+COPY pyproject.toml /
+
+#Install poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+#Set poetry to install without a virtual environment
+RUN poetry config virtualenvs.create false
+
+#Install poetry without prompting the user for any input
+RUN poetry install --no-interaction
+
+## Setting PATH for CUDA
+ENV PATH=/usr/local/cuda:/usr/local/cuda-12.0/bin:/usr/lib/x86_64-linux-gnu${PATH:+:${PATH}}
+ENV	LD_LIBRARY_PATH=/usr/local/lib/${PYTHON_VERSION_MAJOR}/site-packages/tensorrt_libs/:/usr/local/cuda/lib64/stubs/:/usr/local/cuda/lib:/usr/local/cuda:/usr/local/cuda/lib64:usr/local/cuda-12.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+ENV CUDA_HOME=/usr/local/cuda
+
+RUN apt-get update && apt-get install unzip -y
+
+# Install AWC CLI and its dependencies
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
+
+COPY . .
+
+ENTRYPOINT ["/bin/bash"]
+##STAGE_2_ENDS_HERE
+
+
+##STAGE_3_PYTHON_WITHOUT_GPU_BASE_IMAGE
+FROM ${PYTHON_BASE_IMAGE} as py_stage
+##STAGE_3_BASE_IMAGE_ENDS_HERE
+
+##STAGE_3_DEPENDENCIES
+USER root
+WORKDIR /
+
+
+RUN apt-get update -y
+RUN apt-get upgrade -y
+RUN apt-get install -y apt-utils ca-certificates --no-install-recommends
+RUN apt-get install --reinstall openssl
+RUN update-ca-certificates
+
+
+RUN DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install curl -y && \
+    apt-get install openssh-client -y && \
+    apt-get install iproute2 -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        postgresql \
+        postgresql-contrib \
+        software-properties-common \
+        pkg-config \
+        build-essential \
+        gfortran \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        liblapack-dev \
+        libopenblas-dev \
+        libsm6 \
+        libxext6 \
+        libxrender-dev \
+        tzdata \
+        zlib1g-dev
+
+
+# Set Python3.11 as the default python command
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1
+
+## Set Environment Variables for Poetry, installing for Prefect usage.
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+#Copy the TOML
+COPY pyproject.toml /
+
+#Install poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+#Set poetry to install without a virtual environment
+RUN poetry config virtualenvs.create false
+
+#Install poetry without prompting the user for any input
+RUN poetry install --no-interaction
+
+RUN apt-get update && apt-get install unzip -y
+
+
+# Install AWC CLI and its dependencies
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
+
+COPY . .
+
+ENTRYPOINT ["/bin/bash"]
+##STAGE_3_ENDS_HERE
+
+
+
+##STAGE_4_BOTH_R_AND_PYTHON_WITH_GPU_BASE_IMAGE
+FROM ${GPU_BASE_IMAGE} as r_py_gpu_stage
+##STAGE_4_BASE_IMAGE_ENDS_HERE
+
+##STAGE_4_DEPENDENCIES
+USER root
+WORKDIR /
+
+
+RUN apt-get update -y
+RUN apt-get upgrade -y
+RUN apt-get install -y apt-utils ca-certificates --no-install-recommends
+RUN apt-get install --reinstall openssl
+RUN update-ca-certificates
+
+# Install curl and tools for setting up ssh tunnel and debugging docker networks
+RUN apt-get update && \
+    apt-get install curl -y && \
+    apt-get install openssh-client -y && \
+    apt-get install iproute2 -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        postgresql \
+        postgresql-contrib \
+        software-properties-common \
+        pkg-config \
+        build-essential \
+        gfortran \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        liblapack-dev \
+        libopenblas-dev \
+        libsm6 \
+        libxext6 \
+        libxrender-dev \
+        tzdata \
+        zlib1g-dev
+
+######## Python installation ##########
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    build-essential \
+    zlib1g-dev \
+    libssl-dev \
+    libncurses5-dev \
+    libsqlite3-dev \
+    libreadline-dev \
+    libffi-dev \
+    libbz2-dev \
+    liblzma-dev \
+    uuid-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Python version as mentioned from ARG
+RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}/Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz \
+    && tar xzf Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz \
+    && cd Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} \
+    && ./configure --enable-optimizations \
+    && make -j$(nproc) \
+    && make altinstall \
+    && cd .. \
+    && rm -rf Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} Python-${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.tgz
+
+# Set Python3.11 as the default python command
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python${PYTHON_VERSION_MAJOR} 1
+
+## Set Environment Variables for Poetry, installing for Prefect usage.
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+#Copy the TOML
+COPY pyproject.toml /
+
+#Install poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+#Set poetry to install without a virtual environment
+RUN poetry config virtualenvs.create false
+
+#Install poetry without prompting the user for any input
+RUN poetry install --no-interaction
+
+
+##### For R Installation ########
+RUN apt-get install libgfortran5 liblapack3 libblas3
+
+RUN apt-get update && \
+    apt-get install -y \
+    libreadline-dev libbz2-dev libpcre2-dev build-essential libcurl4-openssl-dev \
+    libxml2-dev libssl-dev gfortran gcc libx11-dev libxt-dev xorg-dev zlib1g-dev libncurses5-dev \
+    libncursesw5-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev \
+    liblzma-dev libffi-dev libmetis-dev libc6-dev --no-install-recommends
+
+RUN wget https://cran.r-project.org/src/base/R-4/R-${R_VERSION}.tar.gz \
+    && tar -zxvf R-${R_VERSION}.tar.gz \
+    && cd R-${R_VERSION} \
+    && ./configure \
+    && make \
+    && make install
+
+## Setting PATH for CUDA
+ENV PATH=/usr/local/cuda:/usr/local/cuda-12.0/bin:/usr/lib/x86_64-linux-gnu${PATH:+:${PATH}}
+ENV	LD_LIBRARY_PATH=/usr/local/lib/${PYTHON_VERSION_MAJOR}/site-packages/tensorrt_libs/:/usr/local/cuda/lib64/stubs/:/usr/local/cuda/lib:/usr/local/cuda:/usr/local/cuda/lib64:usr/local/cuda-12.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+ENV CUDA_HOME=/usr/local/cuda
+
+RUN apt-get update && apt-get install unzip -y
+
+# Install AWC CLI and its dependencies
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
+
+RUN timeout 300 R -e "install.packages(c('mailR', 'rJava'), repos='https://cloud.r-project.org')"
+
+COPY . .
+
+ENTRYPOINT ["/bin/bash"]
+##STAGE_4_ENDS_HERE

@@ -1,0 +1,13 @@
+## This file is used to define parameters that can be passed to your functions.
+## The file uses the YAML syntax (learnxinyminutes.com/docs/yaml)
+## Examples:
+## cost_period_start: 2018-09-01
+## cost_period_end: 2020-03-01
+## include_p2p: true
+##
+## Your other parameter definitions can go in the lines below:
+message: "Hello World"
+
+
+## Important: remember to keep an empty line at the end of the file.
+## Keep empty line,

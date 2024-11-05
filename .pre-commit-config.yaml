@@ -1,0 +1,49 @@
+exclude: '^.github'
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+    -   id: check-yaml
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: detect-private-key
+
+-   repo: https://github.com/hhatto/autopep8
+    rev: v2.3.0
+    hooks:
+    -   id: autopep8
+        args:
+        - "--in-place"
+        - "--ignore=E501,W293"
+        - "--max-line-length=120"
+
+-   repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+
+-   repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+    -   id: detect-secrets
+
+-   repo: https://github.com/pycqa/pylint
+    rev: v3.2.3
+    hooks:
+    - id: pylint
+      files: ^src/python/.*\.py$
+      args: ['--disable', 'R,C,E0401,W0718,W0601']
+
+-   repo: https://github.com/lorenzwalthert/pre-commit-hooks
+    rev: v0.4.3
+    hooks:
+    -   id: style-files
+        args: [--style_pkg=styler, --style_fun=tidyverse_style]
+
+    -   id: parsable-R
+        files:  ^src/r/.*\.R$
+
+    -   id: lintr
+        files:  ^src/r/.*\.R$
+        args: ['--warn_only']
+        #verbose: True

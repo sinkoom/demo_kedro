@@ -1,0 +1,56 @@
+name: Pre-commit-check-Push-check 
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+    - mlops_dev
+    - mlops_prd
+    
+jobs:
+
+  pre-commit-push-job:
+    runs-on: ubuntu-latest
+    steps: 
+    
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup python 
+      uses: actions/setup-python@v3
+        
+    - name: Cleanup
+      run: |
+          gh extension install actions/gh-actions-cache
+
+          echo "Fetching list of cache key"
+          cacheKeysForPR=$(gh actions-cache list -R ${{ github.repository }} -B ${{ github.ref }} -L 100 | cut -f 1 )
+
+          ## Setting this to not fail the workflow while deleting cache keys.
+          set +e
+          echo "Deleting caches..."
+          for cacheKey in $cacheKeysForPR
+          do
+              gh actions-cache delete $cacheKey -R ${{ github.repository }} -B ${{ github.ref }} --confirm
+          done
+          echo "Done"
+
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Pre-commit job
+      uses: pre-commit/action@v3.0.1
+    
+    - name : commit & push
+      if: always() 
+      run: |
+          echo ${{ secrets.GITHUB_TOKEN }}
+          git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config --local user.name "$GITHUB_ACTOR"
+          git add -A
+            if ! git diff-index --quiet HEAD; then
+              git commit -m "Pushing updated changes"
+              git push
+            fi
+
+

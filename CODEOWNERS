@@ -1,0 +1,3 @@
+# Require approval from the DS and MLOps approver groups for all files
+* @EliLillyCo/lusa-bia-datascience-prod-approver @EliLillyCo/lusa-bia-mlops-prod-approver
+*/* @EliLillyCo/lusa-bia-datascience-prod-approver @EliLillyCo/lusa-bia-mlops-prod-approver

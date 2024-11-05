@@ -1,0 +1,68 @@
+########################### Kedro part of project is added below ########################
+
+[build-system]
+requires = [ "setuptools",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python"
+readme = "README.md"
+dynamic = [ "dependencies", "version",]
+
+[project.scripts]
+kedro-project = "python.__main__:main"
+
+[tool.kedro]
+package_name = "python"
+project_name = "python"
+kedro_init_version = "0.19.8"
+tools = [ "Testing",]
+example_pipeline = "True"
+source_dir = "src"
+
+[project.entry-points."kedro.hooks"]
+
+[tool.pytest.ini_options]
+addopts = "--cov-report term-missing --cov src/python -ra"
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+exclude_lines = [ "pragma: no cover", "raise NotImplementedError",]
+
+[tool.setuptools.dynamic.version]
+attr = "python.__version__"
+
+[tool.setuptools.packages.find]
+where = [ "src",]
+namespaces = false
+
+[tool.kedro_telemetry]
+project_id = "5ba09944c1db4b81aedfa963f9b44278"
+
+################## Kedro part of project is added above ends here ###################################
+
+[tool.poetry]
+name = "<Project name to be provided here>"
+version = "0.1.0"
+description = "<Project description to be provided here>"
+authors = ["user-id <firstname.lastname@lilly.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+kedro = ">=0.19.8,<0.20.0"
+pandas = "2.2.3"
+ipython = ">=8.10"
+jupyterlab = ">=3.0"
+kedro-telemetry = ">=0.3.1"
+notebook = "^7.2.2"
+pytest = ">=7.2,<8.0"
+pytest-cov = ">=3.0,<4.0"
+pytest-mock = ">=1.7.1,<2.0"
+scikit-learn = ">=1.0,<2.0"
+kedro-datasets = {version = ">=3.0", extras = ["pandas-csvdataset", "pandas-exceldataset", "pandas-parquetdataset"]}
+kubernetes = "31.0.0"
+prefect="3.0.3"
+prefect-github="0.3.0"

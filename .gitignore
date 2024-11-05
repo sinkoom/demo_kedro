@@ -1,0 +1,56 @@
+# Output files
+data/0[0-9]_*/*
+
+# Keep empty folders
+!data/0[0-9]_*/.gitignore
+
+# Local Settings
+conf/local
+
+# Temporary files
+*.*~
+
+# Project file
+*.Rproj
+
+# History files
+.Rhistory
+
+# Session Data files
+.RData
+
+# Output files
+data/0[0-9]_*/*
+
+# Keep empty folders
+!data/0[0-9]_*/.gitignore
+!data/01_raw/**
+
+# Local Settings
+# conf/local
+
+# Temporary files
+*.*~
+
+# Project file
+.Rproj
+
+# History files
+.Rhistory
+
+# Session Data files
+.RData
+
+.DS_Store
+
+# Exclude __pycache__ directories
+__pycache__/
+
+# Prefect related files
+prefect.yaml
+
+.venv
+.viz
+.vscode
+.Rapp.history
+.Rbuildignore

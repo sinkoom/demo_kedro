@@ -1,0 +1,25 @@
+Package: "<Project name to be provided here>"
+Title: "<Project name to be provided here>"
+Version: 0.0.1
+Authors@R: c(
+    person("First name1", "Last name1", email = "firstname1.lastname1@lilly.com", role = c("aut", "cre")),
+    person("First name2", "Last name2", email = "firstname2.lastname2@lilly.com", role = c("aut", "cre"))
+    )
+Description: "<Project description to be provided here>"
+License: file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Depends:
+    R (>= 4.0)
+Imports:
+    framebar,
+    vctrs (>= 0.6.3)
+Remotes:
+    EliLillyCo/framebar
+Suggests:
+    testthat,
+    devtools,
+    pkgdown,
+    styler
